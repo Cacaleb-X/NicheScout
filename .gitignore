@@ -1,0 +1,30 @@
+node_modules
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# Browser cookies, sessions, profiles, and Playwright auth state
+cookies.json
+session.json
+storage-state.json
+playwright/.auth/
+.playwright/
+browser-profile/
+browser-session/
+profiles/
+
+# Local databases may contain sensitive or real-source data
+data/*.sqlite*
+data/real_data/
+
+# Generated exports
+outputs/*.xlsx
+outputs/*.png
+outputs/*.inspect.ndjson
+!outputs/.gitkeep
