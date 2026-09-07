@@ -7,9 +7,15 @@
   "scripts": {
     "scout": "node --experimental-transform-types src/cli/index.ts",
     "demo": "node --experimental-transform-types src/cli/index.ts --city 长沙 --category 酒吧 --niche 哈利波特主题,魔法主题,沉浸式 --limit 50 --output outputs/demo_changsha_harry_potter_bars.xlsx",
-    "test": "node --experimental-transform-types --test tests/*.test.ts"
+    "test": "node --experimental-transform-types --test tests/*.test.ts",
+    "spike:dianping": "node --experimental-transform-types src/spikes/run.ts dianping",
+    "spike:xhs": "node --experimental-transform-types src/spikes/run.ts xhs",
+    "spike:all": "node --experimental-transform-types src/spikes/run.ts all"
   },
   "engines": {
     "node": ">=24"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
   }
 }

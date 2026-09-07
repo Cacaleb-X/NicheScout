@@ -27,4 +27,6 @@ data/real_data/
 outputs/*.xlsx
 outputs/*.png
 outputs/*.inspect.ndjson
+# Real-platform spike samples, screenshots, and page diagnostics stay local
+outputs/real-data-spike/
 !outputs/.gitkeep
