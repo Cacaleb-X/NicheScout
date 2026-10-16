@@ -82,7 +82,7 @@ export class ScoutPipeline {
   private enrichAndScore(store: Store, input: SearchInput): void {
     for (const source of store.sources) {
       if (!source.publicPhone) continue;
-      const contact: Contact = { type: "PHONE", value: source.publicPhone, source: source.source, sourceUrl: source.sourceUrl, confidence: source.source === "DIANPING" ? 0.95 : 0.8 };
+      const contact: Contact = { type: "PHONE", value: source.publicPhone, source: source.source, sourceUrl: source.sourceUrl, sourcePoiId: source.source === "AMAP" ? source.externalId : undefined, confidence: source.source === "AMAP" ? 0.98 : source.source === "DIANPING" ? 0.95 : 0.8, discoveredAt: new Date().toISOString() };
       if (!store.contacts.some((existing) => existing.type === contact.type && existing.value === contact.value)) store.contacts.push(contact);
     }
     const niche = scoreNiche(store, input);

@@ -5,14 +5,14 @@ import { MockBusinessAdapter, MockSocialAdapter } from "../adapters/mock/index.t
 import { ManualImportAdapter } from "../adapters/manual/index.ts";
 import { ScoutPipeline } from "../core/pipeline.ts";
 
-function valueOf(args: string[], name: string): string | undefined {
+export function valueOf(args: string[], name: string): string | undefined {
   const equals = args.find((arg) => arg.startsWith(`${name}=`));
   if (equals) return equals.slice(name.length + 1);
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : undefined;
 }
 
-function split(value?: string): string[] {
+export function split(value?: string): string[] {
   return (value ?? "").split(/[,，、|]+/).map((item) => item.trim()).filter(Boolean);
 }
 

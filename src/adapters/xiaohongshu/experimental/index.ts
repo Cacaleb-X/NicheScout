@@ -1,6 +1,6 @@
 import type { DiscoveryContext, SocialAccount, SocialPost, SocialSearchAdapter, SocialSearchResult } from "../../../models/types.ts";
 import type { Page } from "playwright";
-import { collectDomStructureDiagnostics, collectSelectorDiagnostics, createExperimentalContext, detectRestrictionDiagnostics, logSpikeStage, navigateSearchPage, observePage, retainExperimentalContext, saveDomStructureDiagnostics, saveNavigationFailureDebug, savePageDebugSnapshot, shouldRetainExperimentalContext, spikeDebugSlug, updateDebugSnapshot, waitForNormalLoading } from "../../experimental/browser.ts";
+import { closeExperimentalContext, collectDomStructureDiagnostics, collectSelectorDiagnostics, createExperimentalContext, detectRestrictionDiagnostics, logSpikeStage, navigateSearchPage, observePage, retainExperimentalContext, saveDomStructureDiagnostics, saveNavigationFailureDebug, savePageDebugSnapshot, shouldRetainExperimentalContext, spikeDebugSlug, updateDebugSnapshot, waitForNormalLoading } from "../../experimental/browser.ts";
 import type { FieldAvailability, SpikeRun } from "../../experimental/types.ts";
 
 export interface XiaohongshuSpikeRecord {
@@ -202,7 +202,7 @@ export class XiaohongshuExperimentalAdapter implements SocialSearchAdapter {
       return { platform: "XIAOHONGSHU", experimental: true, query, capturedAt: new Date().toISOString(), accessStatus: "PAGE_ACCESS_SUCCESS", pageAccessStatus: "PAGE_ACCESS_SUCCESS", dataExtractionStatus, searchContentStatus: cards.length || domStructure.potentialCardBlockCount ? "SEARCH_CONTENT_AVAILABLE" : "SEARCH_CONTENT_UNAVAILABLE", fieldAvailability: fieldAvailability(records, false), observations, debug, connectivityProbe, results: records };
     } finally {
       if (shouldRetainExperimentalContext()) retainExperimentalContext(context);
-      else await context.close();
+      else await closeExperimentalContext(context);
       logSpikeStage("QUERY_COMPLETE", query, targetUrl);
     }
   }

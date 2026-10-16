@@ -1,11 +1,14 @@
 {
   "name": "nichescout",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Store-first local business lead discovery CLI",
+  "license": "Apache-2.0",
   "scripts": {
     "scout": "node --experimental-transform-types src/cli/index.ts",
+    "scout:real": "node --experimental-transform-types src/cli/real.ts",
+    "amap:check": "node --experimental-transform-types src/cli/amap-check.ts",
     "demo": "node --experimental-transform-types src/cli/index.ts --city 长沙 --category 酒吧 --niche 哈利波特主题,魔法主题,沉浸式 --limit 50 --output outputs/demo_changsha_harry_potter_bars.xlsx",
     "test": "node --experimental-transform-types --test tests/*.test.ts",
     "spike:dianping": "node --experimental-transform-types src/spikes/run.ts dianping",
@@ -17,5 +20,11 @@
   },
   "devDependencies": {
     "playwright": "^1.62.1"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.0"
   }
 }

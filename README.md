@@ -1,25 +1,42 @@
 # NicheScout
 
-NicheScout 是一个 Store First 的本地商家线索发现 CLI。Phase 1 使用 Mock/Manual Adapter 跑通“输入 → 查询扩展 → 商家发现 → 去重 → 社交内容归因 → 评分 → SQLite → XLSX”完整流程，不依赖 LLM API Key，也不会尝试绕过登录、验证码或平台限制。
+NicheScout is a local-first CLI for turning a niche business idea into a reviewable Excel lead list.
 
-## 环境
-
-- Node.js 24+
-- Codex Desktop 工作区提供的 `@oai/artifact-tool`（用于生成真正的 XLSX）
-
-本仓库在当前 Codex 工作区已配置好运行时依赖。若移动到其他环境，请为 `@oai/artifact-tool` 配置可用的包来源或替换 `src/exporters/xlsx.ts` 的实现。
-
-## 立即运行 Demo
-
-```bash
-npm run demo
+```text
+city + category + niche
+→ store candidates
+→ entity matching and optional verification
+→ XLSX
 ```
 
-输出：`outputs/demo_changsha_harry_potter_bars.xlsx`
+The stable demo is deterministic and uses mock data. Experimental public-search adapters and the optional AMap provider are isolated from the default workflow, so no account, browser session, or API key is required to explore the project.
 
-Demo 会返回 50 家按 Priority Score 排序的商家，并保存公开联系方式来源、匹配证据和人工跟进字段。
+## What it does
 
-## 自定义搜索
+NicheScout expands a query such as `长沙 + 酒吧 + 哈利波特主题`, discovers candidate stores, resolves evidence to store entities, scores the results, stores a local task record, and exports an Excel workbook for human review.
+
+The project is intentionally a CLI. It does not provide a frontend, CRM, automatic messaging, phone automation, or login/CAPTCHA bypass.
+
+## Requirements
+
+- Node.js 24 or newer
+- npm
+- Git
+- Playwright browsers only when explicitly running an experimental browser spike
+
+## Quick start
+
+```bash
+git clone <repository-url>
+cd NicheScout
+npm install
+npm run demo
+npm test
+```
+
+The demo writes `outputs/demo_changsha_harry_potter_bars.xlsx`. It uses only bundled mock data and does not call any external service.
+
+## CLI
 
 ```bash
 npm run scout -- \
@@ -27,43 +44,121 @@ npm run scout -- \
   --district "五一广场" \
   --category "酒吧" \
   --niche "哈利波特主题,魔法主题,沉浸式" \
-  --limit 50 \
+  --limit 30 \
   --exclude "连锁,低价" \
   --output "outputs/my_leads.xlsx"
 ```
 
-`category` 和 `niche` 都是自由输入。`district`、`exclude` 和 `output` 可省略。运行 `npm run scout -- --help` 查看参数。
+Optional arguments:
 
-## 导入人工商家 JSON
+- `--district`: geographic hint
+- `--exclude`: comma-separated exclusion terms
+- `--manual`: path to a local JSON file containing manually supplied stores
+- `--output`: XLSX output path
+
+The bundled `examples/manual-stores.json` contains fictional data.
+
+## Optional AMap verification
+
+`AmapAdapter` uses the official AMap Web Service POI Search 2.0 API. It verifies candidate stores and may return a normalized name, address, district, business area, POI ID, category, and public business telephone.
+
+AMap is optional. Without a key, its commands exit normally and print `provider skipped`; the demo and tests continue to work.
 
 ```bash
-npm run scout -- \
+cp .env.example .env
+# Set AMAP_WEB_SERVICE_KEY in .env
+npm run amap:check
+```
+
+The bounded verification workflow is:
+
+```bash
+npm run scout:real -- \
   --city "长沙" \
   --category "酒吧" \
-  --niche "魔法主题" \
-  --manual examples/manual-stores.json
+  --niche "哈利波特主题,魔法主题" \
+  --limit 20 \
+  --output "outputs/leads/changsha_magic_bars.xlsx"
 ```
 
-人工数据会和 Mock Adapter 结果合并、匹配并去重。缺失字段允许为空；原始数据会保存在 SQLite 中。
+AMap is used only for store verification. A missing telephone is not a verification failure, and the adapter never invents or completes telephone numbers.
 
-## 数据与评分
+## Experimental Xiaohongshu adapter
 
-- SQLite 默认路径：`data/nichescout.sqlite`，可通过 `NICHESCOUT_DB_PATH` 修改。
-- 每次运行创建新的任务记录，不删除或重建旧数据。
-- Match Score 只衡量细分条件匹配度。
-- Contact Score 只衡量公开商家联系方式的可用性。
-- Priority Score = Match Score × 0.6 + Contact Score × 0.4。
-- 所有评分权重集中在 `src/config/scoring.ts`。
-- 普通消费者、KOL/KOC 和本地媒体账号不会被当成商家官方账号。
+`XiaohongshuExperimentalAdapter` and the bounded search-card adapter are experimental. They are not used by `npm run demo` or the stable mock CLI.
 
-## 测试
+The adapters:
+
+- read only visible public search-card fields;
+- do not open note detail pages or user profiles;
+- start with a fresh anonymous browser context and do not reuse a user's login session;
+- stop and report login, CAPTCHA, rate-limit, or access restrictions;
+- do not solve challenges, collect cookies, or attempt login automation;
+- write diagnostic artifacts only under ignored local output directories.
+
+Run an experiment explicitly:
 
 ```bash
-npm test
+npm run spike:xhs -- --query "长沙 哈利波特 酒吧"
 ```
 
-测试覆盖查询扩展、商家去重、实体匹配、细分评分、联系评分、优先级、官方账号判断、来源追踪、缺失数据和 XLSX 导出。
+Website behavior and terms can change. Review applicable rules before running any experiment, keep volumes low, and do not treat experimental output as production data.
 
-## Phase 1 边界
+## Excel output
 
-当前 `MockBusinessAdapter`、`MockSocialAdapter` 和 `ManualImportAdapter` 已实现统一 Adapter 接口。真实大众点评和小红书采集尚未实现；Phase 2 应优先接入一个合规、稳定的公开本地商家数据源，并在 Adapter 内处理 `MANUAL_LOGIN_REQUIRED`、验证码停止与限流状态，核心工作流无需改写。
+The stable demo workbook includes ranked stores, match/contact/priority scores, public contact provenance, supporting evidence, and blank human follow-up fields.
+
+The optional verification workbook uses one `Store Verification` sheet:
+
+| Candidate and evidence | Verification | Structured fields | Review |
+| --- | --- | --- | --- |
+| Store Candidate, XHS Evidence, Source URL | Match Status, Store Match Confidence | AMap Store Name, POI ID, Address, District, Business Area, Category, Public Phone | Review Status, Notes |
+
+Generated workbooks and inspection files are ignored by Git.
+
+## Architecture
+
+```text
+CLI
+├── stable mock/manual adapters
+├── experimental public-search adapters
+└── optional AMap verification provider
+        ↓
+query expansion → candidate extraction → StoreMatcher → deduplication/scoring
+        ↓
+local SQLite task store → XLSX exporter
+```
+
+| Module | Status | Default demo |
+| --- | --- | --- |
+| Mock and manual adapters | Stable | Enabled |
+| Query expansion, matching, deduplication, scoring | Stable | Enabled |
+| XLSX export (`exceljs`) | Stable | Enabled |
+| `AmapAdapter` | Optional | Disabled |
+| Xiaohongshu public search adapters | Experimental | Disabled |
+| Dianping adapter | Experimental spike only | Disabled |
+
+See [PROJECT.md](PROJECT.md) for phase status and architectural boundaries. Phase 2 findings are documented in [docs/REAL_DATA_FEASIBILITY.md](docs/REAL_DATA_FEASIBILITY.md).
+
+## Current limitations
+
+- Real-source adapters are intentionally low-volume and are not production SLAs.
+- AMap verification requires a user-supplied Web Service key.
+- Public-search page structure and availability can change without notice.
+- Candidate extraction is conservative and rule-based; ambiguous stores require human review.
+- Branch-level matching can remain ambiguous when discovery evidence lacks a branch name.
+- Public phone coverage depends entirely on the provider response.
+- The repository does not include real collected records, browser profiles, sessions, cookies, or generated lead files.
+- Decision-maker resolution is not part of v0.3.0.
+
+## Security and privacy
+
+Never commit API keys, `.env`, cookies, browser sessions, authentication state, real-person contact data, or raw real-source exports. Read [SECURITY.md](SECURITY.md) before contributing.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).

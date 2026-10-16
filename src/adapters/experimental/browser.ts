@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { BrowserContext, Page } from "playwright";
+import type { Browser, BrowserContext, Page } from "playwright";
 import type { DetectionEvidence, DomStructureDiagnostics, NavigationMetadata, PageDebugSnapshot, PageObservation, PageAccessStatus, RestrictionDiagnostics, SelectorDiagnostic } from "./types.ts";
 
 const CAPTCHA_PATTERNS = ["图形验证码", "安全验证", "访问验证", "完成验证", "滑块验证", "请依次点击下图图标", "verify captcha"];
@@ -60,21 +60,26 @@ export async function openPage(page: Page, url: string): Promise<PageObservation
 }
 
 const retainedContexts = new Set<BrowserContext>();
+const contextBrowsers = new Map<BrowserContext, Browser>();
 
 export async function createExperimentalContext(platform: string): Promise<{ context: BrowserContext; page: Page; pageCreatedAt: string }> {
   const { chromium } = await import("playwright");
-  const profile = resolve(process.env.SPIKE_PROFILE_DIR || `.playwright/${platform}-profile`);
-  await mkdir(profile, { recursive: true });
   const headlessSetting = (process.env.SPIKE_HEADLESS || process.env.HEADLESS || "true").toLowerCase();
   const headless = !["0", "false", "no"].includes(headlessSetting);
-  const context = await chromium.launchPersistentContext(profile, {
-    executablePath: chromium.executablePath(),
-    headless,
-    locale: "zh-CN",
-    viewport: { width: 1365, height: 900 },
-  });
-  const page = context.pages()[0] || await context.newPage();
+  const browser = await chromium.launch({ executablePath: chromium.executablePath(), headless });
+  const context = await browser.newContext({ locale: "zh-CN", viewport: { width: 1365, height: 900 } });
+  contextBrowsers.set(context, browser);
+  const page = await context.newPage();
+  logSpikeStage("PAGE_CREATED", `${platform} anonymous session`, "about:blank", "ephemeralContext=true");
   return { context, page, pageCreatedAt: new Date().toISOString() };
+}
+
+export async function closeExperimentalContext(context: BrowserContext): Promise<void> {
+  retainedContexts.delete(context);
+  const browser = contextBrowsers.get(context);
+  contextBrowsers.delete(context);
+  await context.close().catch(() => undefined);
+  await browser?.close().catch(() => undefined);
 }
 
 async function inspectEstablishedDocument(page: Page): Promise<{ finalUrl: string; title?: string; bodyOrDomPresent: boolean }> {
@@ -128,7 +133,7 @@ export function shouldRetainExperimentalContext(): boolean {
 }
 
 export async function closeRetainedExperimentalContexts(): Promise<void> {
-  await Promise.all([...retainedContexts].map((context) => context.close().catch(() => undefined)));
+  await Promise.all([...retainedContexts].map((context) => closeExperimentalContext(context)));
   retainedContexts.clear();
 }
 

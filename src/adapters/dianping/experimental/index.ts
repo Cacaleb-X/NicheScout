@@ -1,5 +1,5 @@
 import type { BusinessDiscoveryAdapter, DiscoveryContext, RawBusinessRecord } from "../../../models/types.ts";
-import { collectSelectorDiagnostics, createExperimentalContext, gentlePause, logSpikeStage, navigateSearchPage, observePage, openPage, retainExperimentalContext, saveNavigationFailureDebug, savePageDebugSnapshot, shouldRetainExperimentalContext, spikeDebugSlug, waitForNormalLoading } from "../../experimental/browser.ts";
+import { closeExperimentalContext, collectSelectorDiagnostics, createExperimentalContext, gentlePause, logSpikeStage, navigateSearchPage, observePage, openPage, retainExperimentalContext, saveNavigationFailureDebug, savePageDebugSnapshot, shouldRetainExperimentalContext, spikeDebugSlug, waitForNormalLoading } from "../../experimental/browser.ts";
 import type { FieldAvailability, SpikeRun } from "../../experimental/types.ts";
 
 export interface DianpingSpikeRecord {
@@ -154,7 +154,7 @@ export class DianpingExperimentalAdapter implements BusinessDiscoveryAdapter {
       return { platform: "DIANPING", experimental: true, query, capturedAt: new Date().toISOString(), accessStatus: "PAGE_ACCESS_SUCCESS", pageAccessStatus: "PAGE_ACCESS_SUCCESS", dataExtractionStatus, searchContentStatus: (debug.candidateNodeCount ?? 0) > 0 ? "SEARCH_CONTENT_AVAILABLE" : "SEARCH_CONTENT_UNAVAILABLE", fieldAvailability: availability, observations, debug, results: records };
     } finally {
       if (shouldRetainExperimentalContext()) retainExperimentalContext(context);
-      else await context.close();
+      else await closeExperimentalContext(context);
       logSpikeStage("QUERY_COMPLETE", query, targetUrl);
     }
   }

@@ -1,4 +1,4 @@
-node_modules
+node_modules/
 
 # Local environment and credentials
 .env
@@ -13,20 +13,33 @@ secrets.json
 cookies.json
 session.json
 storage-state.json
+*cookies*.json
+*session*.json
+*storage-state*.json
+*.har
+*.trace.zip
 playwright/.auth/
 .playwright/
 browser-profile/
 browser-session/
 profiles/
+auth-state/
 
 # Local databases may contain sensitive or real-source data
 data/*.sqlite*
 data/real_data/
+data/real-data/
+data/local/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 
 # Generated exports
 outputs/*.xlsx
 outputs/*.png
 outputs/*.inspect.ndjson
+outputs/leads/
+outputs/local/
 # Real-platform spike samples, screenshots, and page diagnostics stay local
 outputs/real-data-spike/
 !outputs/.gitkeep

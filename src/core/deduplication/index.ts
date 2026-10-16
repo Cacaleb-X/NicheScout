@@ -33,10 +33,12 @@ export class StoreDeduplicator {
     return {
       id: randomUUID(), storeName: record.storeName, normalizedName: normalizeText(record.storeName),
       brandName: record.brandName, branchName: record.branchName, city: record.city,
-      district: record.district, address: record.address, category: record.category,
+      district: record.district, adcode: record.adcode, businessArea: record.businessArea, address: record.address, category: record.category,
       description: record.description, rating: record.rating, reviewCount: record.reviewCount,
       avgPrice: record.avgPrice, dianpingUrl: record.source === "DIANPING" ? record.sourceUrl : undefined,
       status: record.status, longitude: record.longitude, latitude: record.latitude,
+      amapPoiId: record.source === "AMAP" ? record.externalId : undefined,
+      amapSourceUrl: record.source === "AMAP" ? record.sourceUrl : undefined,
       sources: [record], posts: [], accounts: [], contacts: [], evidence: [],
       matchScore: 0, contactScore: 0, priorityScore: 0, reviewStatus: "UNMATCHED",
     };
@@ -46,11 +48,15 @@ export class StoreDeduplicator {
     store.brandName ||= record.brandName;
     store.branchName ||= record.branchName;
     store.district ||= record.district;
+    store.adcode ||= record.adcode;
+    store.businessArea ||= record.businessArea;
     store.address ||= record.address;
     store.description ||= record.description;
     store.rating ??= record.rating;
     store.reviewCount ??= record.reviewCount;
     store.avgPrice ??= record.avgPrice;
     store.dianpingUrl ||= record.source === "DIANPING" ? record.sourceUrl : undefined;
+    store.amapPoiId ||= record.source === "AMAP" ? record.externalId : undefined;
+    store.amapSourceUrl ||= record.source === "AMAP" ? record.sourceUrl : undefined;
   }
 }

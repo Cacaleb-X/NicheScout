@@ -1,4 +1,4 @@
-import type { RawBusinessRecord, SocialAccount, SocialPost, Store } from "../../models/types.ts";
+import type { RawBusinessRecord, SocialAccount, SocialPost, Store, StoreCandidate } from "../../models/types.ts";
 import { scoringConfig } from "../../config/scoring.ts";
 import { similarity } from "../../utils/text.ts";
 
@@ -20,6 +20,21 @@ export class StoreMatcher {
     let result = name * 0.5 + brand * 0.14 + address * 0.2 + geo * 0.08 + (left.city === right.city ? 0.08 : 0);
     if (branchConflict) result -= 0.28;
     return Math.max(0, Math.min(1, result));
+  }
+
+  findForCandidate(candidate: StoreCandidate, records: RawBusinessRecord[]): { record?: RawBusinessRecord; score: number; status: Store["reviewStatus"] } {
+    const ranked = records.map((record) => {
+      const name = Math.max(similarity(candidate.candidateName, record.storeName), similarity(candidate.candidateName, record.alias || ""));
+      const city = !record.city || record.city === candidate.city || record.city.includes(candidate.city) ? 1 : 0;
+      const category = `${record.category || ""} ${record.typecode || ""}`.includes(candidate.category) ? 1 : 0.35;
+      const xhsText = candidate.evidence.map((item) => item.text).join(" ");
+      const locality = [record.district, record.businessArea, record.address].filter(Boolean).some((value) => xhsText.includes(value!)) ? 1 : 0;
+      return { record, score: Math.min(1, name * 0.7 + city * 0.12 + category * 0.06 + locality * 0.06 + candidate.confidence * 0.06) };
+    }).sort((a, b) => b.score - a.score);
+    const best = ranked[0];
+    if (!best) return { score: 0, status: "UNMATCHED" };
+    if (best.score < scoringConfig.matching.reviewThreshold) return { record: best.record, score: best.score, status: "UNMATCHED" };
+    return { record: best.record, score: best.score, status: best.score >= scoringConfig.matching.acceptThreshold ? "MATCHED" : "NEEDS_REVIEW" };
   }
 
   findForPost(post: SocialPost, stores: Store[]): { store?: Store; score: number; status: Store["reviewStatus"] } {

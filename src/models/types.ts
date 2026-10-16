@@ -1,6 +1,6 @@
 export type AuthorType = "OFFICIAL" | "POSSIBLE_OFFICIAL" | "KOL_KOC" | "UGC" | "LOCAL_MEDIA" | "UNKNOWN";
 export type ContactType = "PHONE" | "XHS_ACCOUNT" | "WECHAT" | "EMAIL" | "OTHER";
-export type SourcePlatform = "DIANPING" | "XIAOHONGSHU" | "MANUAL" | "MOCK" | "SEARCH_ENGINE";
+export type SourcePlatform = "AMAP" | "DIANPING" | "XIAOHONGSHU" | "MANUAL" | "MOCK" | "SEARCH_ENGINE";
 
 export interface SearchInput {
   city: string;
@@ -26,8 +26,12 @@ export interface RawBusinessRecord {
   branchName?: string;
   city: string;
   district?: string;
+  adcode?: string;
+  businessArea?: string;
   address?: string;
   category?: string;
+  alias?: string;
+  typecode?: string;
   description?: string;
   rating?: number;
   reviewCount?: number;
@@ -45,6 +49,7 @@ export interface SocialPost {
   source: "XIAOHONGSHU" | "MOCK";
   authorId: string;
   authorName: string;
+  authorProfileUrl?: string;
   authorType: AuthorType;
   title: string;
   body: string;
@@ -79,8 +84,43 @@ export interface Contact {
   value: string;
   source: SourcePlatform;
   sourceUrl?: string;
+  sourcePoiId?: string;
   confidence: number;
   officialStatus?: AuthorType;
+  discoveredAt?: string;
+}
+
+export interface StoreCandidateEvidence {
+  text: string;
+  kind: "TITLE" | "SNIPPET" | "AUTHOR_BUSINESS_HINT";
+}
+
+export interface StoreCandidate {
+  candidateName: string;
+  city: string;
+  category: string;
+  nicheQuery: string;
+  confidence: number;
+  evidence: StoreCandidateEvidence[];
+  sourceNoteId: string;
+  sourceNoteUrl?: string;
+  sourceAuthor?: string;
+  sourceNoteIds?: string[];
+  sourceNoteUrls?: string[];
+  sourceAuthors?: string[];
+  extractionMethod: "RULE_BASED" | "LLM" | "RULE_AND_LLM";
+}
+
+export type AmapMatchStatus = "MATCHED" | "AMBIGUOUS" | "NOT_FOUND";
+
+export interface StoreVerificationResult {
+  candidate: StoreCandidate;
+  attempts: number;
+  matchStatus: AmapMatchStatus;
+  matchedRecord?: RawBusinessRecord;
+  matchConfidence: number;
+  reviewStatus: "MATCHED" | "NEEDS_REVIEW";
+  notes?: string;
 }
 
 export interface Store {
@@ -91,6 +131,8 @@ export interface Store {
   branchName?: string;
   city: string;
   district?: string;
+  adcode?: string;
+  businessArea?: string;
   address?: string;
   category?: string;
   description?: string;
@@ -101,6 +143,8 @@ export interface Store {
   status?: string;
   longitude?: number;
   latitude?: number;
+  amapPoiId?: string;
+  amapSourceUrl?: string;
   sources: RawBusinessRecord[];
   posts: SocialPost[];
   accounts: SocialAccount[];
@@ -143,4 +187,25 @@ export interface PipelineResult {
   phoneCount: number;
   xhsAccountCount: number;
   outputPath: string;
+}
+
+export interface RealPipelineStats {
+  xhsCards: number;
+  storeCandidates: number;
+  amapVerificationAttempts: number;
+  amapMatchedStores: number;
+  matchRate: number;
+  addressCoverageRate: number;
+  districtCoverageRate: number;
+  storesWithPhone: number;
+  phoneCoverageRate: number;
+  ambiguousMatches: number;
+  notFound: number;
+  needsReviewCount: number;
+  finalLeadsCount: number;
+}
+
+export interface RealPipelineResult extends PipelineResult {
+  stats: RealPipelineStats;
+  verifications: StoreVerificationResult[];
 }
